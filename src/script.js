@@ -55,11 +55,12 @@ $(
           return;
         }
         var $body = $content.contents().find('body');
+
         data.slobs.forEach(function(info) {
           var $h1 = $('<h1>');
           $h1.text(info.tags['label'] || info.id);
           var $table = $('<table>');
-          ['id', 'encoding', 'compression',
+          ['file', 'id', 'encoding', 'compression',
            'refCount', 'blobCount'].forEach(
              function(name) {
                var $tr = $('<tr>');
@@ -89,6 +90,7 @@ $(
           $body.append($tags);
           $body.append($('<h2>').text('Content Types'));
           $body.append($contentTypes);
+          $('<hr>').appendTo($body);
         });
       });
 
