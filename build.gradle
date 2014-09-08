@@ -40,6 +40,13 @@ fatJar {
         }
     }
 
+    project.file("exclude.txt").eachLine {
+        line ->
+            println line
+            if (!line.startsWith("#")) {
+                exclude line.trim()
+            }
+    }
 
 }
 
