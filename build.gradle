@@ -1,0 +1,48 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'eu.appsatori:gradle-fatjar-plugin:0.2-rc1'
+    }
+}
+
+apply plugin: 'fatjar'
+
+sourceCompatibility = 1.6
+version = '0.1'
+
+repositories {
+    mavenCentral()
+}
+
+//this currently only works in gradle < 2.0
+fatJar {
+    manifest {
+        attributes(
+        "Main-Class": "itkach.slobber.Slobber",
+        "Implementation-Title": "Slobber",
+        "Implementation-Version": version)
+    }
+
+    sourceSets {
+        main {
+            resources {
+                srcDirs = [
+                    'src/'
+                ]
+            }
+        }
+    }
+
+
+}
+
+dependencies {
+    compile project(':slobber')
+ }
