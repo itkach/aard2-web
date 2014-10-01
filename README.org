@@ -5,7 +5,7 @@
   /Aard2 for Web/ requires [[http://java.com/download/index.jsp][Java 1.6 or newer]] and a modern browser
   such as [[https://www.google.com/chrome/browser/][Chrome]] or [[http://mozilla.org/firefox][Firefox]].
 
-  [[https://github.com/itkach/aard2-web/releases/tag/0.1][Download Aard2 for Web]]
+  [[https://github.com/itkach/aard2-web/releases/][Download Aard2 for Web]]
 
   To start the application, run
 
