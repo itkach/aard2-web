@@ -6,6 +6,7 @@
     <link rel="stylesheet" type="text/css" href="style.css" />
     <script src="jquery-2.1.1.min.js"></script>
     <script src="script.js"></script>
+    <script src="/styleswitcher.js"></script>
   </head>
   <body>
 
@@ -22,8 +23,13 @@
         <div id="lookup-result"></div>
       </div>
 
-      <div id="content-container">
-        <iframe id="content" name="content"> </iframe>
+      <div id="content-container" class="vertical">
+        <div id="content-header" class="horizontal">
+          <span id="header-title">Wikipedia</span>
+          <select id="dictionary-style">
+          </select>
+        </div>
+        <iframe id="content" name="content" class="vertical"> </iframe>
       </div>
 
     </div>
