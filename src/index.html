@@ -13,13 +13,18 @@
     <div class="horizontal">
 
       <div id="lookup-container" class="vertical">
-        <a id="dict-link" href="#">Dictionaries</a>
-        <input id="word"
-               name="word"
-               placeholder="Lookup..."
-               type="search"
-               autocomplete="off"
-               autofocus>
+        <div id="top-link-container" align="center">
+          <a id="dict-link" href="#">Dictionaries</a>
+        </div>
+        <div id="word-container" class="horizontal">
+          <input id="word"
+                 name="word"
+                 placeholder="Lookup..."
+                 type="search"
+                 autocomplete="off"
+                 autofocus>
+          <a id="random-link" href="#">&#x2685;</a>
+        </div>
         <div id="lookup-result"></div>
       </div>
 

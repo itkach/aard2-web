@@ -84,11 +84,13 @@ $(
       $styleSwitcher.setStyle(styleTitle, $content.contents()[0]);
     });
 
-    var doLookup = function() {
+    var doLookup = function(dontClearContent) {
       var word = $word.val();
       console.log(word);
       $lookupResult.empty();
-      $content.attr('src', '');
+      if (!dontClearContent) {
+        $content.attr('src', '');
+      }
 
       if (!word) {
         return;
@@ -170,7 +172,18 @@ $(
         });
       });
 
-
     });
+
+    $('#random-link').on('click', function() {
+      console.log('getting random article');
+      $content.attr('src', '');
+      $content.empty();
+      $.getJSON('/random', function(data) {
+        $content.attr('src', data.url);
+        $word.val(data.label);
+        doLookup(true);
+      });
+    });
+
   }
 );

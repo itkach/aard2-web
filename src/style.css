@@ -17,11 +17,33 @@ body {
     flex-direction: column;
 }
 
+#top-link-container {
+    flex-shrink: 0;
+    flex-grow: 0;
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
+    color: #6a6a6a;
+}
+
+#word-container {
+    flex-shrink: 0;
+    flex-grow: 0;
+}
+
 #dict-link {
     font-size: small;
     color: #6a6a6a;
-    text-align: center;
-    flex-shrink: 0;
+    line-height: 1rem;
+}
+
+#random-link {
+    font-size: x-large;
+    color: #6a6a6a;
+    text-decoration: none;
+    line-height: 3rem;
+    flex-grow: 0;
+    margin-right: 0.4rem;
 }
 
 #lookup-container {
@@ -36,6 +58,7 @@ body {
 
 #word {
     flex-shrink: 0;
+    flex-grow: 1;
     padding: 0.4rem;
     font-size: large;
     margin: 0.4rem;
