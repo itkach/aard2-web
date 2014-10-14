@@ -10,7 +10,7 @@
   To start the application, run
 
    #+BEGIN_SRC sh
-  java -Dslobber.browse=true -jar aard2-web-0.2.jar ~/Downloads/*.slob
+  java -Dslobber.browse=true -jar aard2-web-0.3.jar ~/Downloads/*.slob
    #+END_SRC
 
   (assuming you have some slob files in /~/Downloads/
