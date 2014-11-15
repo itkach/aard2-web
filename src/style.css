@@ -1,5 +1,9 @@
 body {
-    height: 100%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
     margin: 0px;
     padding: 0px;
     font-family: sans-serif;
@@ -20,10 +24,6 @@ body {
 #top-link-container {
     flex-shrink: 0;
     flex-grow: 0;
-    display: table-cell;
-    vertical-align: middle;
-    text-align: center;
-    color: #6a6a6a;
 }
 
 #word-container {
@@ -41,8 +41,9 @@ body {
     font-size: x-large;
     color: #6a6a6a;
     text-decoration: none;
-    line-height: 3rem;
+    line-height: 3.5rem;
     flex-grow: 0;
+    flex-shrink: 0;
     margin-right: 0.4rem;
 }
 
@@ -57,10 +58,10 @@ body {
 }
 
 #word {
-    flex-shrink: 0;
+    flex-shrink: 1;
     flex-grow: 1;
-    padding: 0.4rem;
     font-size: large;
+    padding: 0.4rem;
     margin: 0.4rem;
 }
 
@@ -128,4 +129,12 @@ li a {
 
 li a:hover {
     background: darkgray;
+}
+
+.whos-next-status-label-up {
+    color: darkgreen;
+}
+
+.whos-next-status-label-not_here {
+    color: red;
 }
