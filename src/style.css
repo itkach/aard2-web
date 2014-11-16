@@ -86,6 +86,7 @@ body {
 
 #content {
     border: 0;
+    width: 100%;
 }
 
 #content-container {
