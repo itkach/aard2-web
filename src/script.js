@@ -104,7 +104,11 @@ $(
         var $ul = $('<ul>');
         data.every(function(item) {
           var $li = $('<li>');
-          var $a = $('<a>').text(item.label)
+          var $label = $('<div>').append($('<strong>').text(item.label));
+          var $dictLabel = $('<small>').text(item.dictLabel || '');
+          var $a = $('<a>')
+                .append($label)
+                .append($dictLabel)
                 .attr('href', item.url)
                 .attr('target', 'content');
           $li.append($a);
