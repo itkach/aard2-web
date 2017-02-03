@@ -1,6 +1,8 @@
 $(
   function() {
 
+    var dontClearContent = false;
+    var previousLookup = '';
     var scheduledLookupID;
 
     var $word = $('#word');
@@ -13,6 +15,7 @@ $(
 
     var defaultStyle = 'Default';
     $content.on('load', function(){
+      $content.contents().on('keydown', onContentKeyDown);
       try {
         var contentLocation = $content.contents().attr('location');
         if (contentLocation.href === 'about:blank') {
@@ -85,6 +88,7 @@ $(
     });
 
     var doLookup = function(dontClearContent) {
+      var deferred = $.Deferred();
       var word = $word.val();
       console.log(word);
       $lookupResult.empty();
@@ -93,12 +97,14 @@ $(
       }
 
       if (!word) {
-        return;
+        return deferred.reject();
       }
+      previousLookup = word;
       $.getJSON('/find/?key='+encodeURIComponent(word), function(data) {
-        if (!data || data.length == 0) {
+        if (!data || data.length === 0) {
           var $div = $('<div>').attr('align', 'center').text('Nothing found');
           $lookupResult.append($div);
+          deferred.reject();
           return;
         }
         var $ul = $('<ul>');
@@ -110,20 +116,167 @@ $(
                 .append($label)
                 .append($dictLabel)
                 .attr('href', item.url)
-                .attr('target', 'content');
+                .attr('target', 'content')
+                // make sure last clicked element is remembered
+                .on('click', function() {
+                  $lookupResult.data('selected', this);
+                })
+                .on('keydown', onLinkKeyDown);
           $li.append($a);
           $ul.append($li);
           return true;
         });
         $lookupResult.append($ul);
+        deferred.resolve();
       });
+      return deferred.promise();
     };
 
-    var onInputChange = function() {
-      if (scheduledLookupID) {
-        clearTimeout(scheduledLookupID);
+    var previousLookupCheck = function() {
+      return (previousLookup === $word.val());
+    };
+
+    var onContentKeyDown = function(e) {
+      console.log(e);
+      var el = this;
+      var key = e.which;
+      switch (key) {
+        // 37 is 'ArrowLeft'
+        // go back to last selected element in results list
+        case 37:
+          console.log('left');
+          // only shift focus if we can't scroll left
+          console.log(el.body.scrollLeft);
+          if (el.body && el.body.scrollLeft === 0)
+          {
+            e.preventDefault();
+            $lookupResult.data('selected').focus();
+          }
+          break;
+        // 13 is 'Enter'
+        // focus on #word
+        case 13:
+          $word.focus();
+          break;
+        // 27 is 'Escape'
+        // empty #word and focus on it
+        case 27:
+          // prevent bubbling to #word
+          e.preventDefault();
+          if (!dontClearContent)
+          {
+            $content.attr('src', '');
+          }
+          $lookupResult.empty();
+          $word.val('');
+          $word.focus();
+          break;
+        default:
+          break;
       }
-      scheduledLookupID = setTimeout(doLookup, 500);
+    };
+
+    var onLinkKeyDown = function(e) {
+      var el = this;
+      var key = e.which;
+      switch (key) {
+        // 27 is 'Escape'
+        case 27:
+          e.preventDefault();
+          if (!dontClearContent)
+          {
+            $content.attr('src', '');
+          }
+          $lookupResult.empty();
+          $word.val('');
+          $word.focus();
+          break;
+        // 40 is 'ArrowDown'
+        case 40:
+          console.log('down');
+          e.preventDefault();
+          $(el.parentNode).nextAll().first().find('a').focus();
+          break;
+        // 38 is 'ArrowUp'
+        case 38:
+          console.log('up');
+          e.preventDefault();
+          var $elPrevAll = $(el.parentNode).prevAll();
+          // if there are multiple previous entries, focus on the first
+          if ($elPrevAll.length > 0)
+          {
+            $elPrevAll.first().find('a').focus();
+          }
+          // else we're at the top: focus #word input
+          else {
+            $word.focus();
+          }
+          break;
+        // 39 is 'ArrowRight'
+        case 39:
+          console.log('right');
+          e.preventDefault();
+          el.click();
+          $content.focus();
+          break;
+        default:
+          break;
+      }
+    };
+
+    var onInputChange = function(e) {
+      var key = e.which;
+      switch (key) {
+        // 27 is 'Escape'
+        case 27:
+          $lookupResult.empty();
+          $word.val('');
+          break;
+        // 40 is 'ArrowDown'
+        case 40:
+          console.log('down');
+          if (previousLookupCheck()) {
+            var $firstLink = $($lookupResult).find('a:first-of-type');
+            // only take action if there actually are results
+            if ($firstLink.length > 0) {
+              $firstLink[0].focus();
+            }
+          }
+          else {
+            if (scheduledLookupID) {
+              clearTimeout(scheduledLookupID);
+            }
+            doLookup(true).done(function(){
+              var $firstLink = $($lookupResult).find('a:first-of-type');
+              // only take action if there actually are results
+              if ($firstLink.length > 0) {
+                $firstLink[0].focus();
+              }
+            });
+          }
+          break;
+        // 13 is 'Enter'
+        case 13:
+          if (previousLookupCheck()) {
+            $($lookupResult).find('a:first-of-type')[0].click();
+          }
+          else {
+            if (scheduledLookupID) {
+              clearTimeout(scheduledLookupID);
+            }
+            doLookup(dontClearContent).done(function(){
+              $($lookupResult).find('a:first-of-type')[0].click();
+            });
+          }
+          break;
+        default:
+          if (scheduledLookupID) {
+            clearTimeout(scheduledLookupID);
+          }
+          scheduledLookupID = setTimeout(function() {
+            doLookup(dontClearContent);
+          }, 250);
+      }
     };
 
     $word.on('keyup', onInputChange);
