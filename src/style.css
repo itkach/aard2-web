@@ -128,7 +128,7 @@ li a {
     vertical-align: middle;
 }
 
-li a:hover {
+li a:focus, li a:hover {
     background: darkgray;
 }
 
