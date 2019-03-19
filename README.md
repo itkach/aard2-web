@@ -11,11 +11,11 @@ To start the application, run
 
 	java -Dslobber.browse=true -jar aard2-web-0.3.jar ~/Downloads/*.slob
 
-(assuming you have some slob files in /~/Downloads/
+(assuming you have some slob files in *~/Downloads*
 directory). This should open Aard2 web UI page
 (http://localhost:8013) in the default system browser.
 
 To start the web server on a different port, set system
-property /slobber.port/. For example, to start on port 8014:
+property *slobber.port*. For example, to start on port 8014:
 
 	java -jar -Dslobber.port=8014 -Dslobber.browse=true ~/Downloads/*.slob
