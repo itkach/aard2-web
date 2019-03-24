@@ -42,3 +42,11 @@ Finally, as a side note, on some cloud machines, and on AWS machines in particul
 	</body>
 	</html>
 	
+## Tweaking
+
+As a bonus, it's also possible to tweak *Aard2 for Web* even further for your needs, even after it has been compiled. All you need to do is to modify or replace the corresponding files as for your needs. The tweakable elements include, and are not limited to:
+	*	*./favicon.ico* - The favicon. 32x32 ICO file is expected
+	*	*./index.html*	- Generic page on how data is disaplyed. Generic things are easily changable, such as the page title or other of similar nature. You can also insert a picture inside if you feel particularly adventurious and creative
+	*	*./style.css*	- The 'styles' file. You can change the layout of displayed information upon your needs
+	
+Be sure to be cautious when tweaking these files.
