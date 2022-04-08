@@ -1,6 +1,7 @@
 apply plugin: 'java'
 
-version = '0.7'
+version = '0.8'
+
 sourceCompatibility = 1.7
 
 repositories {
