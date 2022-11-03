@@ -1,0 +1,6 @@
+[submodule "slobber"]
+	path = slobber
+	url = https://github.com/itkach/slobber.git
+[submodule "slobj"]
+	path = slobj
+	url = https://github.com/itkach/slobj.git

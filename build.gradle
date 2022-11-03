@@ -10,12 +10,7 @@ repositories {
 
 jar {
     from {
-        configurations.compile.collect {
-            it.isDirectory() ? it : zipTree(it)
-        }
-        configurations.runtime.collect {
-            it.isDirectory() ? it : zipTree(it)
-        }
+	configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
 
    manifest {
@@ -46,5 +41,5 @@ jar {
 }
 
 dependencies {
-    compile project(':slobber')
+    implementation project(':slobber')
  }
