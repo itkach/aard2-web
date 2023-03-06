@@ -3,7 +3,7 @@ plugins {
 }
 
 def getVersionName = {
-    return "git describe --tags".execute().text.trim()
+    return "git -C ${projectDir} describe --tags".execute().text.trim()
 }
 
 version = getVersionName()
