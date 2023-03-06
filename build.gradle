@@ -15,14 +15,7 @@ repositories {
 }
 
 jar {
-    from {
-        configurations.compile.collect {
-            it.isDirectory() ? it : zipTree(it)
-        }
-        configurations.runtime.collect {
-            it.isDirectory() ? it : zipTree(it)
-        }
-    }
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 
    manifest {
         attributes(
@@ -41,16 +34,22 @@ jar {
         }
     }
 
-    project.file("exclude.txt").eachLine {
+
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+    }
+    def excludeList = project(":slobj").file("exclude.txt")
+    println("Excluding files listed in " + excludeList.path)
+    excludeList.eachLine {
         line ->
-            println line
             if (!line.startsWith("#")) {
                 exclude line.trim()
             }
     }
-
 }
 
 dependencies {
-    compile project(':slobber')
+    implementation project(':slobj')
+    implementation project(':slobber')
  }
