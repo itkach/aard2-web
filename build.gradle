@@ -1,6 +1,12 @@
-apply plugin: 'java'
+plugins {
+    id 'java'
+}
 
-version = '0.8'
+def getVersionName = {
+    return "git describe --tags".execute().text.trim()
+}
+
+version = getVersionName()
 
 sourceCompatibility = 1.7
 
