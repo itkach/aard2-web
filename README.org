@@ -23,3 +23,20 @@
    #+BEGIN_SRC sh
   java -jar -Dslobber.port=8014 -Dslobber.browse=true ~/Downloads/*.slob
    #+END_SRC
+
+  To build:
+
+   #+BEGIN_SRC sh
+
+     # clone slobj and slobber sources
+     git clone https://github.com/itkach/slobj.git
+     git clone https://github.com/itkach/slobber.git
+
+     # clone this repo
+     git clone https://github.com/itkach/aard2-web
+
+     #build fat jar
+     cd aard2-web
+     ./gradlew build
+
+   #+END_SRC
