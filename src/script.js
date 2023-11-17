@@ -16,6 +16,10 @@ $(function () {
       if (contentLocation.href === "about:blank") {
         $contentHeader.hide();
       } else {
+        var url = new URL(contentLocation.href);
+        url.searchParams.set('q', $word.val());
+        window.top.location.hash = url.pathname + url.search;
+        history.pushState("", "", window.top.location.href);
         var i,
           slobId,
           lookupKey,
@@ -43,6 +47,17 @@ $(function () {
           $("#header-title").text(contentLocation.href);
         }
         $contentHeader.show();
+        $content.contents().find('body').dblclick(function(e) {
+          var selectedWord = $content.contents()[0].getSelection().toString().trim();
+          if (selectedWord) {
+            $word.val(selectedWord);
+            doLookup(true);
+            $content.attr('src', "");
+            setTimeout(function(){
+              $content.attr('src', $('#lookup-result li:first-child a').attr('href'));
+            }, 500);
+          }
+        });
       }
     } catch (x) {
       console.warn(x);
@@ -114,6 +129,14 @@ $(function () {
       $lookupResult.append($ul);
     });
   };
+
+  if (window.top.location.hash) {
+    var itemUrl = window.top.location.hash.slice(1);
+    var params = new URLSearchParams(itemUrl);
+    $word.val(params.get('q'));
+    doLookup();
+    $("#content").attr("src", itemUrl);
+  }
 
   var onInputChange = function () {
     if (scheduledLookupID) {
