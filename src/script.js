@@ -50,12 +50,11 @@ $(function () {
         $content.contents().find('body').dblclick(function(e) {
           var selectedWord = $content.contents()[0].getSelection().toString().trim();
           if (selectedWord) {
+            var $link = $("<a>").attr("href", selectedWord);
+            $(e.target).append($link);
+            $link[0].click();
             $word.val(selectedWord);
             doLookup(true);
-            $content.attr('src', "");
-            setTimeout(function(){
-              $content.attr('src', $('#lookup-result li:first-child a').attr('href'));
-            }, 500);
           }
         });
       }
