@@ -17,7 +17,9 @@ $(function () {
         $contentHeader.hide();
       } else {
         var url = new URL(contentLocation.href);
-        url.searchParams.set('q', $word.val());
+        if ($word.val()) {
+          url.searchParams.set('q', $word.val());
+        }
         window.top.location.hash = url.pathname + url.search;
         history.pushState("", "", window.top.location.href);
         var i,
@@ -119,21 +121,26 @@ $(function () {
         var $a = $("<a>")
           .append($label)
           .append($dictLabel)
-          .attr("href", item.url)
+          .attr("href", item.url.slice(0,-1) + "&q=" + item.label)
           .attr("target", "content");
         $li.append($a);
         $ul.append($li);
         return true;
       });
       $lookupResult.append($ul);
+      if (!$content.attr('src')) {
+        $content.attr('src', $ul.find('li:first-child a').attr('href'));
+      }
     });
   };
 
   if (window.top.location.hash) {
     var itemUrl = window.top.location.hash.slice(1);
-    var params = new URLSearchParams(itemUrl);
-    $word.val(params.get('q'));
-    doLookup();
+    var q = new URLSearchParams(new URL(itemUrl, 'http://_').search).get('q');
+    if (q) {
+      $word.val(q);
+      doLookup();
+    }
     $("#content").attr("src", itemUrl);
   }
 
