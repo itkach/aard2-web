@@ -17,6 +17,12 @@
   directory). This should open Aard2 web UI page
   (http://localhost:8013) in the default system browser.
 
+  To make the web server available for the entire home/work network add `-Dslobber.host=0.0.0.0`, e.g:
+
+   #+BEGIN_SRC sh
+  java -Dslobber.browse=true -Dslobber.host=0.0.0.0 -jar aard2-web-0.8.jar ~/Downloads/*.slob
+   #+END_SRC
+
   To start the web server on a different port, set system
   property /slobber.port/. For example, to start on port 8014:
 
