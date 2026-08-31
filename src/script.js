@@ -10,45 +10,58 @@ $(function () {
   $contentHeader.hide();
 
   var defaultStyle = "Default";
-  $content.on("load", function () {
-    try {
-      var contentLocation = $content.contents().attr("location");
-      if (contentLocation.href === "about:blank") {
-        $contentHeader.hide();
-      } else {
-        var i,
-          slobId,
-          lookupKey,
-          pathPart,
-          pathParts = contentLocation.pathname.split("/");
-        for (i = 0; i < pathParts.length; i++) {
-          pathPart = pathParts[i];
-          if (pathPart === "slob" && i + 1 < pathParts.length) {
-            slobId = pathParts[i + 1];
-            if (i + 2 < pathParts.length) {
-              lookupKey = pathParts[i + 2];
-            }
-            break;
-          }
-        }
-        if (slobId) {
-          $styleSelect.attr("data-slob-id", slobId);
-          $.getJSON("/slob/" + slobId, function (data) {
-            var label = data.tags["label"] || data.id;
-            $("#header-title").text(
-              label + ": " + decodeURIComponent(lookupKey.replace(/\+/g, "%20"))
-            );
-          });
-        } else {
-          $("#header-title").text(contentLocation.href);
-        }
-        $contentHeader.show();
-      }
-    } catch (x) {
-      console.warn(x);
-      $contentHeader.hide();
-    }
 
+  // Style preferences are per-dictionary, not per-user: different
+  // dictionaries can offer different sets of alternate styles (even
+  // though in practice most share the same night.css). Keyed by each
+  // dictionary's stable content "uri" tag - the same identifier
+  // aard2-android already keys its own preference storage by - rather
+  // than by slob id, which is an ephemeral, per-server-mount
+  // identifier that would leave orphaned localStorage entries behind
+  // on every restart.
+  var getStylePref = function (dictUri) {
+    return (dictUri && localStorage.getItem("style." + dictUri)) || defaultStyle;
+  };
+
+  // Adds, replaces, or - for the synthetic "Default" sentinel, which
+  // doesn't correspond to any real titled <link> (see
+  // showStyleOptions() below) - removes the "style" query parameter
+  // in a URL, preserving any other query params and any fragment.
+  //
+  // "Default" is deliberately never sent to the server at all: the
+  // server's natural, unmodified rendering already *is* that (see
+  // Slobber's StylePreference, which does nothing when the param is
+  // absent), so sending it as a real parameter would only cost a
+  // wasted parse on every single article load for an identical
+  // result.
+  //
+  // url is always a path relative to this page's own origin (see
+  // Slobber.mkContentURL()), so it needs a base to parse as a URL -
+  // this page's own location works for every caller, including the
+  // one that passes the content iframe's location, since both share
+  // the same origin. The result is an absolute URL rather than a
+  // relative path, but every caller only ever sets it as an href/src
+  // attribute, which browsers resolve identically either way.
+  var applyStylePref = function (url, styleTitle) {
+    var parsed = new URL(url, window.location.href);
+    if (styleTitle === defaultStyle) {
+      parsed.searchParams.delete("style");
+    } else {
+      parsed.searchParams.set("style", styleTitle);
+    }
+    return parsed.href;
+  };
+
+  var withStylePref = function (url, dictUri) {
+    return applyStylePref(url, getStylePref(dictUri));
+  };
+
+  // Populates the style dropdown for the article currently on screen,
+  // and remembers dictUri (on the select element itself, same idiom
+  // this code already used for slobId) so the change handler below
+  // knows which dictionary's preference to persist.
+  var showStyleOptions = function (dictUri) {
+    $styleSelect.attr("data-dict-uri", dictUri || "");
     $styleSelect.empty();
     try {
       var titles = $styleSwitcher.getTitles($content.contents()[0]);
@@ -60,24 +73,82 @@ $(function () {
           $styleSelect.append($("<option>").val(title).text(title));
         });
         $styleSelect.show();
-
-        var styleTitle = localStorage.getItem("style." + slobId);
-        if (!styleTitle) {
-          styleTitle = defaultStyle;
-        }
-        $styleSelect.val(styleTitle).trigger("change");
+        $styleSelect.val(getStylePref(dictUri)).trigger("change");
       }
     } catch (x) {
       console.warn(x);
       $styleSelect.hide();
     }
+  };
+
+  $content.on("load", function () {
+    try {
+      var contentLocation = $content.contents().attr("location");
+      if (contentLocation.href === "about:blank") {
+        $contentHeader.hide();
+        showStyleOptions(null);
+        return;
+      }
+
+      var i,
+        slobId,
+        lookupKey,
+        pathPart,
+        pathParts = contentLocation.pathname.split("/");
+      for (i = 0; i < pathParts.length; i++) {
+        pathPart = pathParts[i];
+        if (pathPart === "slob" && i + 1 < pathParts.length) {
+          slobId = pathParts[i + 1];
+          if (i + 2 < pathParts.length) {
+            lookupKey = pathParts[i + 2];
+          }
+          break;
+        }
+      }
+      $contentHeader.show();
+      if (slobId) {
+        $.getJSON("/slob/" + slobId, function (data) {
+          var label = data.tags["label"] || data.id;
+          $("#header-title").text(
+            label + ": " + decodeURIComponent(lookupKey.replace(/\+/g, "%20"))
+          );
+          showStyleOptions(data.uri);
+        });
+      } else {
+        $("#header-title").text(contentLocation.href);
+        showStyleOptions(null);
+      }
+    } catch (x) {
+      console.warn(x);
+      $contentHeader.hide();
+      showStyleOptions(null);
+    }
   });
 
-  $styleSelect.on("change", function (e) {
-    var slobId = $styleSelect.attr("data-slob-id");
+  $styleSelect.on("change", function () {
     var styleTitle = $styleSelect.val();
-    localStorage.setItem("style." + slobId, styleTitle);
-    $styleSwitcher.setStyle(styleTitle, $content.contents()[0]);
+    var dictUri = $styleSelect.attr("data-dict-uri");
+    var alreadyActive = getStylePref(dictUri) === styleTitle;
+    if (dictUri) {
+      localStorage.setItem("style." + dictUri, styleTitle);
+    }
+    if (alreadyActive) {
+      // showStyleOptions() below sets the dropdown's value to match
+      // what the server already rendered this page with, then
+      // triggers this same "change" event just to run the branch
+      // below once - but nothing actually changed, so there's nothing
+      // to reload.
+      return;
+    }
+    // The article on screen was served with whatever preference was
+    // active *at that time*, including in its own internal links (see
+    // Slobber's StylePreference), which only a fresh request can
+    // re-bake - patching the loaded DOM in place would mean
+    // duplicating that same logic here in JS, so just reload with the
+    // new preference and let the server redo it consistently.
+    var contentLocation = $content.contents().attr("location");
+    var currentHref = contentLocation.pathname + contentLocation.search + contentLocation.hash;
+    $content.attr("src", applyStylePref(currentHref, styleTitle));
   });
 
   var doLookup = function (dontClearContent) {
@@ -105,7 +176,7 @@ $(function () {
         var $a = $("<a>")
           .append($label)
           .append($dictLabel)
-          .attr("href", item.url)
+          .attr("href", withStylePref(item.url, item.dictUri))
           .attr("target", "content");
         $li.append($a);
         $ul.append($li);
@@ -181,7 +252,7 @@ $(function () {
     $content.attr("src", "");
     $content.empty();
     $.getJSON("/random", function (data) {
-      $content.attr("src", data.url);
+      $content.attr("src", withStylePref(data.url, data.dictUri));
       $word.val(data.label);
       doLookup(true);
     });
