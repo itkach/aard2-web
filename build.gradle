@@ -8,8 +8,6 @@ def getVersionName = {
 
 version = getVersionName()
 
-sourceCompatibility = 1.7
-
 repositories {
     mavenCentral()
 }
