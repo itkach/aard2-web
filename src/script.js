@@ -11,6 +11,16 @@ $(function () {
 
   var defaultStyle = "Default";
 
+  // User styles are global .css files Slobber serves under /user-styles and
+  // applies (as an injected <link>) when ?style=<name> asks for one. Fetch the
+  // list once so the picker can offer them alongside each article's own
+  // built-in alternate stylesheets; the file name (extension included) is the
+  // value, shown with ".css" stripped.
+  var userStyles = [];
+  $.getJSON("/user-styles", function (data) {
+    userStyles = data || [];
+  });
+
   // Style preferences are per-dictionary, not per-user: different
   // dictionaries can offer different sets of alternate styles (even
   // though in practice most share the same night.css). Keyed by each
@@ -64,17 +74,24 @@ $(function () {
     $styleSelect.attr("data-dict-uri", dictUri || "");
     $styleSelect.empty();
     try {
-      var titles = $styleSwitcher.getTitles($content.contents()[0]);
-      if (!titles || titles.length === 0) {
+      var titles = $styleSwitcher.getTitles($content.contents()[0]) || [];
+      if (titles.length === 0 && userStyles.length === 0) {
         $styleSelect.hide();
-      } else {
-        $styleSelect.append($("<option>").val(defaultStyle).text(defaultStyle));
-        titles.every(function (title) {
-          $styleSelect.append($("<option>").val(title).text(title));
-        });
-        $styleSelect.show();
-        $styleSelect.val(getStylePref(dictUri)).trigger("change");
+        return;
       }
+      $styleSelect.append($("<option>").val(defaultStyle).text(defaultStyle));
+      titles.forEach(function (title) {
+        $styleSelect.append($("<option>").val(title).text(title));
+      });
+      // User styles are global (offered for every article); value is the file
+      // name, label the same with the ".css" extension stripped.
+      userStyles.forEach(function (name) {
+        $styleSelect.append(
+          $("<option>").val(name).text(name.replace(/\.css$/, ""))
+        );
+      });
+      $styleSelect.show();
+      $styleSelect.val(getStylePref(dictUri)).trigger("change");
     } catch (x) {
       console.warn(x);
       $styleSelect.hide();
