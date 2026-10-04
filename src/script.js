@@ -121,9 +121,8 @@ $(function () {
   };
 
   // Populates the style dropdown for the article currently on screen,
-  // and remembers dictUri (on the select element itself, same idiom
-  // this code already used for slobId) so the change handler below
-  // knows which dictionary's preference to persist.
+  // and remembers dictUri (on the select element itself) so the change
+  // handler below knows which dictionary's preference to persist.
   var showStyleOptions = function (dictUri) {
     $styleSelect.attr("data-dict-uri", dictUri || "");
     $styleSelect.empty();
@@ -378,8 +377,8 @@ $(function () {
 
   // "input" fires only when the text actually changes (typing, pasting, the
   // field's clear button), unlike key events, which also fire for arrows,
-  // Enter or Tab and used to redo the lookup - rebuilding the result list,
-  // and losing keyboard focus that was in it - for no change at all.
+  // Enter or Tab and would redo the lookup for no change, rebuilding the
+  // result list.
   var onInputChange = function () {
     clearTimeout(scheduledLookupID);
     scheduledLookupID = null;
