@@ -78,11 +78,11 @@ $(function () {
   // Style preferences are per-dictionary, not per-user: different
   // dictionaries can offer different sets of alternate styles (even
   // though in practice most share the same night.css). Keyed by each
-  // dictionary's stable content "uri" tag - the same identifier
-  // aard2-android already keys its own preference storage by - rather
-  // than by slob id, which is an ephemeral, per-server-mount
-  // identifier that would leave orphaned localStorage entries behind
-  // on every restart.
+  // dictionary's "uri" tag - the same identifier aard2-android keys its
+  // own preference storage by - rather than by slob id: the id identifies
+  // one build of a dictionary file, so each new edition of a dictionary
+  // gets a new one, while its "uri" stays the same and keeps the
+  // preference.
   var getStylePref = function (dictUri) {
     return (dictUri && storageGet("style." + dictUri)) || defaultStyle;
   };
