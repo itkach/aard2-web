@@ -49,11 +49,17 @@ $(function () {
   // the session, only not remembered across page loads.
   var memoryStorage = {};
 
+  // Memory first: every storageSet writes it, so it has this session's
+  // latest value even if writing localStorage failed (e.g. a full quota) while
+  // reading it still works. localStorage supplies values from earlier visits.
   var storageGet = function (key) {
+    if (memoryStorage.hasOwnProperty(key)) {
+      return memoryStorage[key];
+    }
     try {
       return localStorage.getItem(key);
     } catch (x) {
-      return memoryStorage.hasOwnProperty(key) ? memoryStorage[key] : null;
+      return null;
     }
   };
 
@@ -439,23 +445,34 @@ $(function () {
     return Math.max(1, Math.floor($lookupResult.innerHeight() / itemHeight) - 1);
   };
 
-  // Whether the results on screen (and any highlighted one) are still for
-  // previous text: typed faster than the lookup's delay.
-  var resultsOutOfDate = function () {
-    return scheduledLookupID || $word.val() !== lookedUp;
+  // Runs action once the results on screen are for the text in the field, and
+  // returns true if that meant waiting: typed faster than the lookup's delay
+  // (look up now), or the lookup is still in flight (when it answers - after
+  // its own handler has filled in the list; an aborted lookup never runs it).
+  // The article pane isn't cleared: its blank page could otherwise arrive
+  // after, and replace, an article the action opens.
+  var whenResultsReady = function (action) {
+    if (scheduledLookupID || $word.val() !== lookedUp) {
+      doLookup(true, action);
+      return true;
+    }
+    if (lookupRequest) {
+      lookupRequest.done(action);
+      return true;
+    }
+    return false;
   };
 
   var moveSelection = function (delta) {
-    if (resultsOutOfDate()) {
-      // Look up now, then start from the new results' first (or, moving up,
-      // last) result - not from wherever the previous ones were highlighted.
-      // The article pane isn't cleared: see openOrEnterArticle.
-      doLookup(true, function () {
-        var $results = $lookupResult.find("a[data-url]");
-        if ($results.length) {
-          selectResult(delta > 0 ? $results.first() : $results.last());
-        }
-      });
+    // With new results, start from their first (or, moving up, last) result -
+    // not from wherever the previous ones were highlighted.
+    var waited = whenResultsReady(function () {
+      var $results = $lookupResult.find("a[data-url]");
+      if ($results.length) {
+        selectResult(delta > 0 ? $results.first() : $results.last());
+      }
+    });
+    if (waited) {
       return;
     }
     var $results = $lookupResult.find("a[data-url]");
@@ -482,11 +499,7 @@ $(function () {
   };
 
   var openOrEnterArticle = function () {
-    if (resultsOutOfDate()) {
-      // Look up now, then open. Without clearing the article pane first - its
-      // blank page could otherwise arrive after, and replace, the result being
-      // opened.
-      doLookup(true, openFirstResult);
+    if (whenResultsReady(openFirstResult)) {
       return;
     }
     var $current = $lookupResult.find("a.current");
