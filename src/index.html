@@ -32,9 +32,19 @@
           type="search"
           autocomplete="off"
           autofocus
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls="lookup-result"
+          aria-expanded="false"
+          aria-label="Lookup"
         />
       </div>
-      <div id="lookup-result"></div>
+      <div
+        id="lookup-result"
+        role="listbox"
+        aria-label="Lookup results"
+        tabindex="-1"
+      ></div>
     </div>
 
     <div id="content-container" class="vertical">

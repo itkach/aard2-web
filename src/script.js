@@ -8,6 +8,7 @@ $(function () {
   var $stylePicker = $("#style-picker");
   var $headerTitle = $("#header-title");
   var $root = $(document.documentElement);
+  var $sidebarToggle = $("#sidebar-toggle");
 
   // The header and its toolbar are always shown; its article part - title and
   // style picker - only while an article (or other page) is open.
@@ -121,6 +122,24 @@ $(function () {
     return url.pathname + "?blob=" + (url.searchParams.get("blob") || "");
   };
 
+  // The result selected with the arrow keys whose article hasn't loaded yet
+  // (see selectResult). It stays highlighted meanwhile, rather than the
+  // highlight jumping back to the article still on screen.
+  var $pendingResult = null;
+
+  var markCurrent = function ($a) {
+    $lookupResult
+      .find("a[data-url]")
+      .removeClass("current")
+      .attr("aria-selected", "false");
+    if ($a) {
+      $a.addClass("current").attr("aria-selected", "true");
+      $word.attr("aria-activedescendant", $a.attr("id"));
+    } else {
+      $word.removeAttr("aria-activedescendant");
+    }
+  };
+
   // Highlights the lookup result for the article on screen, if it's listed.
   var highlightCurrentResult = function () {
     var current = null;
@@ -132,18 +151,27 @@ $(function () {
     } catch (x) {
       // No article document to read (yet).
     }
-    $lookupResult.find("a[data-url]").each(function () {
-      var $a = $(this);
-      $a.toggleClass(
-        "current",
-        current !== null && articleKey($a.attr("data-url")) === current
-      );
+    if ($pendingResult) {
+      if (current !== articleKey($pendingResult.attr("data-url"))) {
+        return;
+      }
+      $pendingResult = null;
+    }
+    var $current = $lookupResult.find("a[data-url]").filter(function () {
+      return current !== null && articleKey($(this).attr("data-url")) === current;
     });
+    markCurrent($current.length ? $current.first() : null);
   };
 
   $content.on("load", function () {
     try {
       var contentLocation = $content.contents().attr("location");
+      if (previewHref && articleKey(contentLocation.href) !== articleKey(previewHref)) {
+        // Something other than arrow-key browsing loaded this page (a link in
+        // the article, Back, ...): the next arrow key starts a new entry.
+        previewHref = null;
+      }
+      listenForKeysIn($content.contents()[0]);
       highlightCurrentResult();
       if (contentLocation.href === "about:blank") {
         showStyleOptions(null);
@@ -232,9 +260,19 @@ $(function () {
     $content.attr("src", applyStylePref(currentHref, styleTitle));
   });
 
-  var doLookup = function (dontClearContent) {
+  // The text the current results were looked up for.
+  var lookedUp = null;
+
+  var doLookup = function (dontClearContent, onResults) {
     var word = $word.val();
     console.log(word);
+    lookedUp = word;
+    clearTimeout(scheduledLookupID);
+    scheduledLookupID = null;
+    clearTimeout(selectionLoadID);
+    $pendingResult = null;
+    previewHref = null;
+    $word.removeAttr("aria-activedescendant").attr("aria-expanded", "false");
     $lookupResult.empty();
     if (!dontClearContent) {
       $content.attr("src", "");
@@ -249,16 +287,22 @@ $(function () {
         $lookupResult.append($div);
         return;
       }
-      var $ul = $("<ul>");
-      data.every(function (item) {
-        var $li = $("<li>");
+      var $ul = $("<ul>").attr("role", "none");
+      data.every(function (item, i) {
+        var $li = $("<li>").attr("role", "none");
         var $label = $("<div>").append($("<strong>").text(item.label));
         var $dictLabel = $("<small>").text(item.dictLabel || "");
         // The unstyled URL and dictionary are kept on the link so a style
         // change can re-point it (see the style select's change handler).
+        // Out of the Tab order: the arrow keys in the lookup field move
+        // through the results (see the field's keydown handler).
         var $a = $("<a>")
           .append($label)
           .append($dictLabel)
+          .attr("id", "result-" + i)
+          .attr("role", "option")
+          .attr("aria-selected", "false")
+          .attr("tabindex", "-1")
           .attr("data-url", item.url)
           .attr("data-dict-uri", item.dictUri)
           .attr("href", withStylePref(item.url, item.dictUri))
@@ -268,21 +312,192 @@ $(function () {
         return true;
       });
       $lookupResult.append($ul);
+      $word.attr("aria-expanded", "true");
       highlightCurrentResult();
+      if (onResults) {
+        onResults();
+      }
     });
   };
 
+  // "input" fires only when the text actually changes (typing, pasting, the
+  // field's clear button), unlike key events, which also fire for arrows,
+  // Enter or Tab and used to redo the lookup - rebuilding the result list,
+  // and losing keyboard focus that was in it - for no change at all.
   var onInputChange = function () {
-    if (scheduledLookupID) {
-      clearTimeout(scheduledLookupID);
+    clearTimeout(scheduledLookupID);
+    scheduledLookupID = null;
+    if ($word.val() !== lookedUp) {
+      scheduledLookupID = setTimeout(doLookup, 500);
     }
-    scheduledLookupID = setTimeout(doLookup, 500);
   };
 
-  $word.on("keyup", onInputChange);
-  $word.on("search", onInputChange);
+  $word.on("input", onInputChange);
 
-  var $sidebarToggle = $("#sidebar-toggle");
+  // Keyboard: focus stays in the lookup field (so typing can always refine the
+  // lookup) while the arrow keys move through the results, each shown in the
+  // article pane after a short pause - holding a key doesn't load every result
+  // passed. Enter opens the first result if none is selected yet, otherwise
+  // moves focus into the article (to scroll it by keyboard); Escape or "/"
+  // there comes back to the field.
+
+  var selectionLoadID = null;
+
+  // href last shown by arrow-key browsing. Articles shown while browsing
+  // share one history entry - the first adds it, the rest replace it - so
+  // Back returns to where browsing started instead of through every result.
+  var previewHref = null;
+
+  var showResult = function ($a) {
+    clearTimeout(selectionLoadID);
+    selectionLoadID = null;
+    var href = new URL($a.attr("href"), window.location.href).href;
+    var contentWindow = $content[0].contentWindow;
+    if (
+      previewHref &&
+      articleKey(contentWindow.location.href) === articleKey(previewHref)
+    ) {
+      contentWindow.location.replace(href);
+    } else {
+      contentWindow.location.assign(href);
+    }
+    previewHref = href;
+  };
+
+  var selectResult = function ($a, loadNow) {
+    $pendingResult = $a;
+    markCurrent($a);
+    $a[0].scrollIntoView({ block: "nearest" });
+    clearTimeout(selectionLoadID);
+    if (loadNow) {
+      showResult($a);
+    } else {
+      selectionLoadID = setTimeout(function () {
+        showResult($a);
+      }, 150);
+    }
+  };
+
+  // Results that fit in the list's visible height, for Page Up/Down.
+  var resultsPerPage = function ($results) {
+    var itemHeight = $results.first().outerHeight() || 1;
+    return Math.max(1, Math.floor($lookupResult.innerHeight() / itemHeight) - 1);
+  };
+
+  var moveSelection = function (delta) {
+    var $results = $lookupResult.find("a[data-url]");
+    if (!$results.length) {
+      return;
+    }
+    var index = $results.index($results.filter(".current"));
+    var next;
+    if (index < 0) {
+      next = delta > 0 ? 0 : $results.length - 1;
+    } else {
+      next = Math.min(Math.max(index + delta, 0), $results.length - 1);
+    }
+    if (next !== index) {
+      selectResult($results.eq(next));
+    }
+  };
+
+  var openOrEnterArticle = function () {
+    var $current = $lookupResult.find("a.current");
+    if ($current.length) {
+      if (selectionLoadID) {
+        showResult($current);
+      }
+      $content[0].contentWindow.focus();
+      return;
+    }
+    var openFirst = function () {
+      var $first = $lookupResult.find("a[data-url]").first();
+      if ($first.length) {
+        selectResult($first, true);
+      }
+    };
+    if (scheduledLookupID || $word.val() !== lookedUp) {
+      // Typed faster than the lookup's delay: look up now, then open. Without
+      // clearing the article pane first - its blank page could otherwise
+      // arrive after, and replace, the result being opened.
+      doLookup(true, openFirst);
+    } else {
+      openFirst();
+    }
+  };
+
+  $word.on("keydown", function (e) {
+    switch (e.key) {
+      case "ArrowDown":
+        moveSelection(1);
+        break;
+      case "ArrowUp":
+        moveSelection(-1);
+        break;
+      case "PageDown":
+        moveSelection(resultsPerPage($lookupResult.find("a[data-url]")));
+        break;
+      case "PageUp":
+        moveSelection(-resultsPerPage($lookupResult.find("a[data-url]")));
+        break;
+      case "Enter":
+        openOrEnterArticle();
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+  });
+
+  // A click on a result navigates by itself (it's a link into the article
+  // pane); it just supersedes any arrow-key selection still waiting to load.
+  $lookupResult.on("click", "a[data-url]", function () {
+    clearTimeout(selectionLoadID);
+    selectionLoadID = null;
+    $pendingResult = null;
+    previewHref = null;
+  });
+
+  var focusLookup = function () {
+    if ($root.hasClass("sidebar-collapsed")) {
+      $sidebarToggle.trigger("click");
+    }
+    $word.trigger("focus").trigger("select");
+  };
+
+  var isTextInput = function (el) {
+    return (
+      el &&
+      (el.isContentEditable || /^(input|textarea|select)$/i.test(el.tagName))
+    );
+  };
+
+  // "/" outside a text field focuses the lookup field; in the article, so does
+  // Escape.
+  var onKeydownOutsideField = function (e, inArticle) {
+    if (e.ctrlKey || e.metaKey || e.altKey || isTextInput(e.target)) {
+      return;
+    }
+    if (e.key === "/" || (inArticle && e.key === "Escape")) {
+      e.preventDefault();
+      focusLookup();
+    }
+  };
+
+  $(document).on("keydown", function (e) {
+    onKeydownOutsideField(e, false);
+  });
+
+  // Articles are separate documents (from the same server), so their key
+  // events don't reach this page's handlers; listen in each as it loads.
+  var listenForKeysIn = function (doc) {
+    if (doc && !doc.aard2KeysHandled) {
+      doc.aard2KeysHandled = true;
+      doc.addEventListener("keydown", function (e) {
+        onKeydownOutsideField(e, true);
+      });
+    }
+  };
 
   var syncSidebarToggle = function () {
     var shown = !$root.hasClass("sidebar-collapsed");
