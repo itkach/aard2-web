@@ -288,6 +288,7 @@ $(function () {
     clearTimeout(scheduledLookupID);
     scheduledLookupID = null;
     clearTimeout(selectionLoadID);
+    selectionLoadID = null;
     $pendingResult = null;
     previewHref = null;
     $word.removeAttr("aria-activedescendant").attr("aria-expanded", "false");
@@ -407,7 +408,25 @@ $(function () {
     return Math.max(1, Math.floor($lookupResult.innerHeight() / itemHeight) - 1);
   };
 
+  // Whether the results on screen (and any highlighted one) are still for
+  // previous text: typed faster than the lookup's delay.
+  var resultsOutOfDate = function () {
+    return scheduledLookupID || $word.val() !== lookedUp;
+  };
+
   var moveSelection = function (delta) {
+    if (resultsOutOfDate()) {
+      // Look up now, then start from the new results' first (or, moving up,
+      // last) result - not from wherever the previous ones were highlighted.
+      // The article pane isn't cleared: see openOrEnterArticle.
+      doLookup(true, function () {
+        var $results = $lookupResult.find("a[data-url]");
+        if ($results.length) {
+          selectResult(delta > 0 ? $results.first() : $results.last());
+        }
+      });
+      return;
+    }
     var $results = $lookupResult.find("a[data-url]");
     if (!$results.length) {
       return;
@@ -432,11 +451,10 @@ $(function () {
   };
 
   var openOrEnterArticle = function () {
-    if (scheduledLookupID || $word.val() !== lookedUp) {
-      // Typed faster than the lookup's delay: the results on screen (and any
-      // highlighted one) are still for the previous text. Look up now, then
-      // open. Without clearing the article pane first - its blank page could
-      // otherwise arrive after, and replace, the result being opened.
+    if (resultsOutOfDate()) {
+      // Look up now, then open. Without clearing the article pane first - its
+      // blank page could otherwise arrive after, and replace, the result being
+      // opened.
       doLookup(true, openFirstResult);
       return;
     }
