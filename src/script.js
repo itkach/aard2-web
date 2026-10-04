@@ -43,6 +43,38 @@ $(function () {
     }
   });
 
+  // Saved preferences (styles, theme, sidebar). localStorage can be
+  // unavailable - reading or writing it throws when the browser blocks site
+  // data - so values are also kept in memory: everything then still works for
+  // the session, only not remembered across page loads.
+  var memoryStorage = {};
+
+  var storageGet = function (key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (x) {
+      return memoryStorage.hasOwnProperty(key) ? memoryStorage[key] : null;
+    }
+  };
+
+  var storageSet = function (key, value) {
+    memoryStorage[key] = value;
+    try {
+      localStorage.setItem(key, value);
+    } catch (x) {
+      // Kept in memory only.
+    }
+  };
+
+  var storageRemove = function (key) {
+    delete memoryStorage[key];
+    try {
+      localStorage.removeItem(key);
+    } catch (x) {
+      // Removed from memory only.
+    }
+  };
+
   // Style preferences are per-dictionary, not per-user: different
   // dictionaries can offer different sets of alternate styles (even
   // though in practice most share the same night.css). Keyed by each
@@ -52,7 +84,7 @@ $(function () {
   // identifier that would leave orphaned localStorage entries behind
   // on every restart.
   var getStylePref = function (dictUri) {
-    return (dictUri && localStorage.getItem("style." + dictUri)) || defaultStyle;
+    return (dictUri && storageGet("style." + dictUri)) || defaultStyle;
   };
 
   // Adds, replaces, or - for the synthetic "Default" sentinel, which
@@ -249,7 +281,7 @@ $(function () {
     var styleTitle = $styleSelect.val();
     var dictUri = $styleSelect.attr("data-dict-uri");
     if (dictUri) {
-      localStorage.setItem("style." + dictUri, styleTitle);
+      storageSet("style." + dictUri, styleTitle);
     }
     // Lookup result links for this dictionary still carry the previous style
     // in their URLs; point them at the new one.
@@ -568,7 +600,7 @@ $(function () {
   $sidebarToggle.on("click", function () {
     $root.toggleClass("sidebar-collapsed");
     var collapsed = $root.hasClass("sidebar-collapsed");
-    localStorage.setItem("sidebarCollapsed", String(collapsed));
+    storageSet("sidebarCollapsed", String(collapsed));
     syncSidebarToggle();
     if (!collapsed) {
       $word.trigger("focus");
@@ -604,10 +636,10 @@ $(function () {
     var next = themes[(themes.indexOf(currentTheme()) + 1) % themes.length];
     if (next === "auto") {
       $root.removeAttr("data-theme");
-      localStorage.removeItem("theme");
+      storageRemove("theme");
     } else {
       $root.attr("data-theme", next);
-      localStorage.setItem("theme", next);
+      storageSet("theme", next);
     }
     syncThemeToggle();
   });
