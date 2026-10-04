@@ -24,6 +24,34 @@
   java -jar -Dslobber.port=8014 -Dslobber.browse=true ~/Downloads/*.slob
    #+END_SRC
 
+** User styles
+  Besides the styles a dictionary provides itself (such as /Night/),
+  articles can be shown with your own CSS. Put =.css= files in a
+  directory and pass it in system property /slobber.styleDir/:
+
+   #+BEGIN_SRC sh
+  java -Dslobber.browse=true -Dslobber.styleDir=$HOME/aard2-styles -jar aard2-web-0.8.jar ~/Downloads/*.slob
+   #+END_SRC
+
+  Each file becomes a style in the article's style picker, named
+  after the file without the =.css= extension. The style chosen is
+  remembered per dictionary. Edits to a style file take effect the
+  next time an article is loaded; a newly added file shows up in the
+  picker after the page is reloaded.
+
+** Keyboard
+  The lookup field has keyboard focus when the page opens, and keeps
+  it while you move through the lookup results:
+
+  - =↓= / =↑= :: select the next or previous result and show it
+  - =Page Down= / =Page Up= :: move through the results a page at a time
+  - =Enter= :: show the first result if none is selected yet;
+    otherwise move focus into the article, to scroll it with the
+    keyboard
+  - =Esc= (in the article) or =/= :: back to the lookup field, with
+    its text selected to type a new word
+
+** Building
   To build:
 
    #+BEGIN_SRC sh
