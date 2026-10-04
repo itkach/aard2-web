@@ -36,6 +36,11 @@ $(function () {
   var userStyles = [];
   $.getJSON("/user-styles", function (data) {
     userStyles = data || [];
+    // An article that loaded before the list arrived got a picker without the
+    // user styles; refill it.
+    if ($headerTitle.is(":visible")) {
+      showStyleOptions($styleSelect.attr("data-dict-uri") || null);
+    }
   });
 
   // Style preferences are per-dictionary, not per-user: different
@@ -108,7 +113,15 @@ $(function () {
         );
       });
       $stylePicker.show();
-      $styleSelect.val(getStylePref(dictUri)).trigger("change");
+      // Only shows the saved style; nothing changes, so no "change" event. A
+      // saved style this article doesn't offer (a deleted user style, a
+      // built-in one this article lacks) shows as Default - what the server
+      // renders for it - but stays saved for articles that do offer it.
+      var preferred = getStylePref(dictUri);
+      var offered = $styleSelect.find("option").filter(function () {
+        return this.value === preferred;
+      }).length;
+      $styleSelect.val(offered ? preferred : defaultStyle);
     } catch (x) {
       console.warn(x);
       $stylePicker.hide();
@@ -229,17 +242,8 @@ $(function () {
   $styleSelect.on("change", function () {
     var styleTitle = $styleSelect.val();
     var dictUri = $styleSelect.attr("data-dict-uri");
-    var alreadyActive = getStylePref(dictUri) === styleTitle;
     if (dictUri) {
       localStorage.setItem("style." + dictUri, styleTitle);
-    }
-    if (alreadyActive) {
-      // showStyleOptions() below sets the dropdown's value to match
-      // what the server already rendered this page with, then
-      // triggers this same "change" event just to run the branch
-      // below once - but nothing actually changed, so there's nothing
-      // to reload.
-      return;
     }
     // Lookup result links for this dictionary still carry the previous style
     // in their URLs; point them at the new one.
