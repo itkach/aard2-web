@@ -1,8 +1,22 @@
 <!DOCTYPE html>
 <html>
-  <meta charset="utf-8" />
   <head>
+    <meta charset="utf-8" />
     <title>Aard 2</title>
+    <script>
+      // Restore the saved theme and sidebar state before the page is drawn, so
+      // it never shows the wrong one first. See the toggles in script.js.
+      (function () {
+        var root = document.documentElement;
+        var theme = localStorage.getItem("theme");
+        if (theme === "light" || theme === "dark") {
+          root.setAttribute("data-theme", theme);
+        }
+        if (localStorage.getItem("sidebarCollapsed") === "true") {
+          root.classList.add("sidebar-collapsed");
+        }
+      })();
+    </script>
     <link rel="stylesheet" type="text/css" href="style.css" />
     <script src="jquery-3.6.4.min.js"></script>
     <script src="script.js"></script>
@@ -10,9 +24,6 @@
   </head>
   <body class="horizontal">
     <div id="lookup-container" class="vertical">
-      <div id="top-link-container" align="center">
-        <a id="dict-link" href="#">Dictionaries</a>
-      </div>
       <div id="word-container" class="horizontal">
         <input
           id="word"
@@ -22,15 +33,47 @@
           autocomplete="off"
           autofocus
         />
-        <a id="random-link" href="#">⚅</a>
       </div>
       <div id="lookup-result"></div>
     </div>
 
     <div id="content-container" class="vertical">
       <div id="content-header" class="horizontal">
-        <span id="header-title">Wikipedia</span>
-        <select id="dictionary-style"></select>
+        <button id="sidebar-toggle" class="tool-btn" type="button">
+          <span class="icon icon-sidebar"></span>
+        </button>
+        <span id="header-title">
+          <span id="header-dict"></span><span id="header-sep">·</span
+          ><span id="header-article"></span>
+        </span>
+        <span class="toolbar-spacer"></span>
+        <span id="style-picker">
+          <span class="select-wrap">
+            <select id="dictionary-style" title="Article style"></select>
+          </span>
+          <span class="toolbar-divider"></span>
+        </span>
+        <button
+          id="random-link"
+          class="tool-btn"
+          type="button"
+          title="Random article"
+          aria-label="Random article"
+        >
+          <span class="icon icon-dice"></span>
+        </button>
+        <button
+          id="dict-link"
+          class="tool-btn"
+          type="button"
+          title="Dictionaries"
+          aria-label="Dictionaries"
+        >
+          <span class="icon icon-book"></span>
+        </button>
+        <button id="theme-toggle" class="tool-btn" type="button">
+          <span class="icon"></span>
+        </button>
       </div>
       <iframe id="content" name="content" class="vertical"> </iframe>
     </div>

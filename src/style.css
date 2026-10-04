@@ -1,3 +1,45 @@
+/* Colors of the app's own UI (lookup sidebar and article header) - articles
+   keep their dictionary's style. Light by default; dark when the theme is set
+   to dark, or left automatic (no data-theme) on a system in dark mode. */
+:root {
+    color-scheme: light;
+    --bar-height: 2.75rem;
+    --bg: #ececec;
+    --fg: #2e2e2e;
+    --muted: #6a6a6a;
+    --icon: #4e4e4e;
+    --border: #c8c8c8;
+    --hover: #dcdcdc;
+    --current: #d0d0d0;
+    --control-bg: #ffffff;
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #2a2b2d;
+    --fg: #dedede;
+    --muted: #9a9a9a;
+    --icon: #c2c2c2;
+    --border: #45464a;
+    --hover: #393a3d;
+    --current: #45464a;
+    --control-bg: #1e1f21;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --bg: #2a2b2d;
+        --fg: #dedede;
+        --muted: #9a9a9a;
+        --icon: #c2c2c2;
+        --border: #45464a;
+        --hover: #393a3d;
+        --current: #45464a;
+        --control-bg: #1e1f21;
+    }
+}
+
 body {
     position: absolute;
     top: 0;
@@ -7,6 +49,8 @@ body {
     margin: 0;
     padding: 0;
     font-family: sans-serif;
+    background: var(--bg);
+    color: var(--fg);
 }
 
 .horizontal {
@@ -21,83 +65,51 @@ body {
     flex-direction: column;
 }
 
-#top-link-container {
-    flex-shrink: 0;
-    flex-grow: 0;
-}
-
-#word-container {
-    flex-shrink: 0;
-    flex-grow: 0;
-}
-
-#dict-link {
-    font-size: small;
-    color: #6a6a6a;
-    line-height: 1rem;
-}
-
-#random-link {
-    font-size: x-large;
-    color: #6a6a6a;
-    text-decoration: none;
-    line-height: 3.5rem;
-    flex-grow: 0;
-    flex-shrink: 0;
-    margin-right: 0.4rem;
-}
+/* Lookup sidebar */
 
 #lookup-container {
     width: 20em;
     height: 100%;
     overflow: hidden;
-    border-right: thin solid gray;
-    background: lightgray;
+    border-right: 1px solid var(--border);
+    background: var(--bg);
     flex-grow: 0;
     flex-shrink: 0;
 }
 
+.sidebar-collapsed #lookup-container {
+    display: none;
+}
+
+/* The lookup field and the article header form one band of the same height
+   across both panes. */
+#word-container {
+    flex: none;
+    height: var(--bar-height);
+    box-sizing: border-box;
+    padding: 0 0.5rem;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+}
+
 #word {
-    flex-shrink: 1;
-    flex-grow: 1;
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0.3rem 0.5rem;
     font-size: medium;
-    margin: 0.4rem;
-    padding: 0.4rem;
-}
-
-#header-title {
-    flex: 1;
-    font-weight: bold;
-    margin: 0.4rem;
-    margin-top: 0.6rem;
-}
-
-#dictionary-style {
-    margin-right: 0.4rem;
-    margin-left: 0.4rem;
-    padding: 0.4rem;
-}
-
-#content-header {
-    font-size: 130%;
-    border-bottom: thin solid gray;
-    background: lightgray;
-}
-
-#content {
-    border: 0;
-    width: 100%;
-}
-
-#content-container {
-    flex: 1;
+    color: var(--fg);
+    background: var(--control-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
 }
 
 #lookup-result {
+    flex: 1;
+    min-height: 0;
     overflow-x: auto;
     overflow-y: auto;
     position: relative;
-    bottom: 0;
     padding-left: 0.2rem;
     padding-right: 0.2rem;
     padding-top: 0.5rem;
@@ -121,21 +133,189 @@ li a {
     padding-top: 0.6rem;
     padding-bottom: 0.6rem;
     margin-left: -0.5rem;
-    color: #3a3a3a;
+    color: var(--fg);
     width: 100%;
     display: inline-block;
     position: relative;
     vertical-align: middle;
 }
 
+li a small {
+    color: var(--muted);
+}
+
 li a:hover {
-    background: darkgray;
+    background: var(--hover);
 }
 
-.whos-next-status-label-up {
-    color: darkgreen;
+/* The result for the article on screen. */
+li a.current {
+    background: var(--current);
 }
 
-.whos-next-status-label-not_here {
-    color: red;
+/* Article header: sidebar toggle, article title and style, then app-level
+   buttons (random article, dictionaries, theme). */
+
+#content-container {
+    flex: 1;
+}
+
+#content-header {
+    flex: none;
+    height: var(--bar-height);
+    box-sizing: border-box;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0 0.5rem;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+}
+
+#header-title {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin: 0 0.5rem 0 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#header-dict,
+#header-sep {
+    color: var(--muted);
+}
+
+#header-sep {
+    margin: 0 0.4rem;
+}
+
+.toolbar-spacer {
+    flex: 1;
+}
+
+#style-picker {
+    flex: none;
+    display: flex;
+    align-items: center;
+}
+
+.select-wrap {
+    position: relative;
+    display: flex;
+}
+
+#dictionary-style {
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+    padding: 0.25rem 1.7rem 0.25rem 0.55rem;
+    font-size: small;
+    line-height: 1.2;
+    color: var(--fg);
+    background: var(--control-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#dictionary-style:hover {
+    border-color: var(--muted);
+}
+
+/* The dropdown's own chevron (appearance: none removes the native one). */
+.select-wrap::after {
+    content: "";
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    width: 0.8rem;
+    height: 0.8rem;
+    transform: translateY(-50%);
+    pointer-events: none;
+    background-color: var(--muted);
+    -webkit-mask: url(icons/caret-down.svg) no-repeat center / contain;
+    mask: url(icons/caret-down.svg) no-repeat center / contain;
+}
+
+.toolbar-divider {
+    flex: none;
+    width: 1px;
+    height: 1.4rem;
+    margin: 0 0.35rem 0 0.6rem;
+    background: var(--border);
+}
+
+.tool-btn {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--icon);
+    cursor: pointer;
+}
+
+.tool-btn:hover {
+    background: var(--hover);
+    color: var(--fg);
+}
+
+#sidebar-toggle[aria-pressed="true"] {
+    color: var(--fg);
+}
+
+/* Icons (Phosphor, see icons/LICENSE) are used as masks, so they take the
+   text color of their button and follow hover and theme. */
+.icon {
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
+    background-color: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
+
+.icon-sidebar {
+    -webkit-mask-image: url(icons/sidebar-simple.svg);
+    mask-image: url(icons/sidebar-simple.svg);
+}
+
+.icon-dice {
+    -webkit-mask-image: url(icons/dice-five.svg);
+    mask-image: url(icons/dice-five.svg);
+}
+
+.icon-book {
+    -webkit-mask-image: url(icons/book.svg);
+    mask-image: url(icons/book.svg);
+}
+
+.icon-theme-auto {
+    -webkit-mask-image: url(icons/circle-half.svg);
+    mask-image: url(icons/circle-half.svg);
+}
+
+.icon-theme-light {
+    -webkit-mask-image: url(icons/sun.svg);
+    mask-image: url(icons/sun.svg);
+}
+
+.icon-theme-dark {
+    -webkit-mask-image: url(icons/moon.svg);
+    mask-image: url(icons/moon.svg);
+}
+
+#content {
+    border: 0;
+    width: 100%;
 }

@@ -5,9 +5,25 @@ $(function () {
   var $lookupResult = $("#lookup-result");
   var $content = $("#content");
   var $styleSelect = $("#dictionary-style");
-  var $contentHeader = $("#content-header");
+  var $stylePicker = $("#style-picker");
+  var $headerTitle = $("#header-title");
+  var $root = $(document.documentElement);
 
-  $contentHeader.hide();
+  // The header and its toolbar are always shown; its article part - title and
+  // style picker - only while an article (or other page) is open.
+  var showHeaderTitle = function (dictLabel, title) {
+    $("#header-dict").text(dictLabel || "");
+    $("#header-sep").toggle(!!dictLabel);
+    $("#header-article").text(title);
+    $headerTitle.show();
+  };
+
+  var hideHeaderTitle = function () {
+    $headerTitle.hide();
+    $stylePicker.hide();
+  };
+
+  hideHeaderTitle();
 
   var defaultStyle = "Default";
 
@@ -76,7 +92,7 @@ $(function () {
     try {
       var titles = $styleSwitcher.getTitles($content.contents()[0]) || [];
       if (titles.length === 0 && userStyles.length === 0) {
-        $styleSelect.hide();
+        $stylePicker.hide();
         return;
       }
       $styleSelect.append($("<option>").val(defaultStyle).text(defaultStyle));
@@ -90,20 +106,48 @@ $(function () {
           $("<option>").val(name).text(name.replace(/\.css$/, ""))
         );
       });
-      $styleSelect.show();
+      $stylePicker.show();
       $styleSelect.val(getStylePref(dictUri)).trigger("change");
     } catch (x) {
       console.warn(x);
-      $styleSelect.hide();
+      $stylePicker.hide();
     }
+  };
+
+  // A lookup result and an article location match when they're the same
+  // article: same path and blob (the style or a fragment don't matter).
+  var articleKey = function (href) {
+    var url = new URL(href, window.location.href);
+    return url.pathname + "?blob=" + (url.searchParams.get("blob") || "");
+  };
+
+  // Highlights the lookup result for the article on screen, if it's listed.
+  var highlightCurrentResult = function () {
+    var current = null;
+    try {
+      var href = $content.contents().attr("location").href;
+      if (href !== "about:blank") {
+        current = articleKey(href);
+      }
+    } catch (x) {
+      // No article document to read (yet).
+    }
+    $lookupResult.find("a[data-url]").each(function () {
+      var $a = $(this);
+      $a.toggleClass(
+        "current",
+        current !== null && articleKey($a.attr("data-url")) === current
+      );
+    });
   };
 
   $content.on("load", function () {
     try {
       var contentLocation = $content.contents().attr("location");
+      highlightCurrentResult();
       if (contentLocation.href === "about:blank") {
-        $contentHeader.hide();
         showStyleOptions(null);
+        hideHeaderTitle();
         return;
       }
 
@@ -122,7 +166,6 @@ $(function () {
           break;
         }
       }
-      $contentHeader.show();
       if (slobId) {
         $.getJSON("/slob/" + slobId, function (data) {
           // The article can arrive in a style other than this dictionary's
@@ -138,19 +181,20 @@ $(function () {
             return;
           }
           var label = data.tags["label"] || data.id;
-          $("#header-title").text(
-            label + ": " + decodeURIComponent(lookupKey.replace(/\+/g, "%20"))
+          showHeaderTitle(
+            label,
+            decodeURIComponent(lookupKey.replace(/\+/g, "%20"))
           );
           showStyleOptions(data.uri);
         });
       } else {
-        $("#header-title").text(contentLocation.href);
+        showHeaderTitle(null, contentLocation.href);
         showStyleOptions(null);
       }
     } catch (x) {
       console.warn(x);
-      $contentHeader.hide();
       showStyleOptions(null);
+      hideHeaderTitle();
     }
   });
 
@@ -224,6 +268,7 @@ $(function () {
         return true;
       });
       $lookupResult.append($ul);
+      highlightCurrentResult();
     });
   };
 
@@ -236,6 +281,66 @@ $(function () {
 
   $word.on("keyup", onInputChange);
   $word.on("search", onInputChange);
+
+  var $sidebarToggle = $("#sidebar-toggle");
+
+  var syncSidebarToggle = function () {
+    var shown = !$root.hasClass("sidebar-collapsed");
+    var title = shown ? "Hide lookup" : "Show lookup";
+    $sidebarToggle
+      .attr("aria-pressed", String(shown))
+      .attr("title", title)
+      .attr("aria-label", title);
+  };
+
+  $sidebarToggle.on("click", function () {
+    $root.toggleClass("sidebar-collapsed");
+    var collapsed = $root.hasClass("sidebar-collapsed");
+    localStorage.setItem("sidebarCollapsed", String(collapsed));
+    syncSidebarToggle();
+    if (!collapsed) {
+      $word.trigger("focus");
+    }
+  });
+
+  syncSidebarToggle();
+
+  // "auto" follows the system's light/dark setting (no data-theme attribute,
+  // see style.css); "light" and "dark" override it. The saved choice is
+  // applied by index.html before the page is drawn.
+  var themes = ["auto", "light", "dark"];
+  var themeTitles = {
+    auto: "Theme: automatic (follows system)",
+    light: "Theme: light",
+    dark: "Theme: dark",
+  };
+  var $themeToggle = $("#theme-toggle");
+
+  var currentTheme = function () {
+    return $root.attr("data-theme") || "auto";
+  };
+
+  var syncThemeToggle = function () {
+    var theme = currentTheme();
+    $themeToggle
+      .attr("title", themeTitles[theme])
+      .attr("aria-label", themeTitles[theme]);
+    $themeToggle.find(".icon").attr("class", "icon icon-theme-" + theme);
+  };
+
+  $themeToggle.on("click", function () {
+    var next = themes[(themes.indexOf(currentTheme()) + 1) % themes.length];
+    if (next === "auto") {
+      $root.removeAttr("data-theme");
+      localStorage.removeItem("theme");
+    } else {
+      $root.attr("data-theme", next);
+      localStorage.setItem("theme", next);
+    }
+    syncThemeToggle();
+  });
+
+  syncThemeToggle();
 
   $("#dict-link").on("click", function () {
     console.log("getting dict info");
