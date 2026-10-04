@@ -125,6 +125,18 @@ $(function () {
       $contentHeader.show();
       if (slobId) {
         $.getJSON("/slob/" + slobId, function (data) {
+          // The article can arrive in a style other than this dictionary's
+          // current preference, e.g. via Back to a page loaded before the
+          // style was switched. Reload it in the preferred style, in place of
+          // the current history entry, rather than show a dropdown that
+          // doesn't match what's on screen.
+          var preferred = getStylePref(data.uri);
+          var rendered =
+            new URL(contentLocation.href).searchParams.get("style") || defaultStyle;
+          if (rendered !== preferred) {
+            contentLocation.replace(applyStylePref(contentLocation.href, preferred));
+            return;
+          }
           var label = data.tags["label"] || data.id;
           $("#header-title").text(
             label + ": " + decodeURIComponent(lookupKey.replace(/\+/g, "%20"))
@@ -157,6 +169,14 @@ $(function () {
       // to reload.
       return;
     }
+    // Lookup result links for this dictionary still carry the previous style
+    // in their URLs; point them at the new one.
+    $lookupResult.find("a[data-url]").each(function () {
+      var $a = $(this);
+      if ($a.attr("data-dict-uri") === dictUri) {
+        $a.attr("href", applyStylePref($a.attr("data-url"), styleTitle));
+      }
+    });
     // The article on screen was served with whatever preference was
     // active *at that time*, including in its own internal links (see
     // Slobber's StylePreference), which only a fresh request can
@@ -190,9 +210,13 @@ $(function () {
         var $li = $("<li>");
         var $label = $("<div>").append($("<strong>").text(item.label));
         var $dictLabel = $("<small>").text(item.dictLabel || "");
+        // The unstyled URL and dictionary are kept on the link so a style
+        // change can re-point it (see the style select's change handler).
         var $a = $("<a>")
           .append($label)
           .append($dictLabel)
+          .attr("data-url", item.url)
+          .attr("data-dict-uri", item.dictUri)
           .attr("href", withStylePref(item.url, item.dictUri))
           .attr("target", "content");
         $li.append($a);
