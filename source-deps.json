@@ -1,0 +1,14 @@
+[
+  {
+    "name": "slobj",
+    "repo": "git@github.com:itkach/slobj.git",
+    "sha": "941e817e4edb031149a1fb375d60cfa8a5681b52",
+    "describe": "0.13"
+  },
+  {
+    "name": "slobber",
+    "repo": "git@github.com:itkach/slobber.git",
+    "sha": "8735093403736557a1c0447d5ec53a670f89242c",
+    "describe": "0.12"
+  }
+]
