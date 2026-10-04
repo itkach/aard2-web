@@ -179,12 +179,13 @@ $(function () {
   $content.on("load", function () {
     try {
       var contentLocation = $content.contents().attr("location");
+      var contentDocument = $content.contents()[0];
       if (previewHref && articleKey(contentLocation.href) !== articleKey(previewHref)) {
         // Something other than arrow-key browsing loaded this page (a link in
         // the article, Back, ...): the next arrow key starts a new entry.
         previewHref = null;
       }
-      listenForKeysIn($content.contents()[0]);
+      listenForKeysIn(contentDocument);
       highlightCurrentResult();
       if (contentLocation.href === "about:blank") {
         showStyleOptions(null);
@@ -209,6 +210,11 @@ $(function () {
       }
       if (slobId) {
         $.getJSON("/slob/" + slobId, function (data) {
+          if ($content.contents()[0] !== contentDocument) {
+            // Another page has loaded since this one; its own load handler
+            // updates the header and style picker for it.
+            return;
+          }
           // The article can arrive in a style other than this dictionary's
           // current preference, e.g. via Back to a page loaded before the
           // style was switched. Reload it in the preferred style, in place of
