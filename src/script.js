@@ -446,6 +446,20 @@ $(function () {
   };
 
   $word.on("keydown", function (e) {
+    // Leave the key to the browser while an IME is composing - keyCode 229
+    // also covers Safari's candidate-confirming Enter, which arrives after
+    // composition has ended - and with a modifier held (Shift+arrows select
+    // text, Cmd+arrows move the caret, ...).
+    if (
+      e.originalEvent.isComposing ||
+      e.keyCode === 229 ||
+      e.shiftKey ||
+      e.ctrlKey ||
+      e.metaKey ||
+      e.altKey
+    ) {
+      return;
+    }
     switch (e.key) {
       case "ArrowDown":
         moveSelection(1);
