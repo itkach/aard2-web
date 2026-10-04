@@ -415,7 +415,22 @@ $(function () {
     }
   };
 
+  var openFirstResult = function () {
+    var $first = $lookupResult.find("a[data-url]").first();
+    if ($first.length) {
+      selectResult($first, true);
+    }
+  };
+
   var openOrEnterArticle = function () {
+    if (scheduledLookupID || $word.val() !== lookedUp) {
+      // Typed faster than the lookup's delay: the results on screen (and any
+      // highlighted one) are still for the previous text. Look up now, then
+      // open. Without clearing the article pane first - its blank page could
+      // otherwise arrive after, and replace, the result being opened.
+      doLookup(true, openFirstResult);
+      return;
+    }
     var $current = $lookupResult.find("a.current");
     if ($current.length) {
       if (selectionLoadID) {
@@ -424,20 +439,7 @@ $(function () {
       $content[0].contentWindow.focus();
       return;
     }
-    var openFirst = function () {
-      var $first = $lookupResult.find("a[data-url]").first();
-      if ($first.length) {
-        selectResult($first, true);
-      }
-    };
-    if (scheduledLookupID || $word.val() !== lookedUp) {
-      // Typed faster than the lookup's delay: look up now, then open. Without
-      // clearing the article pane first - its blank page could otherwise
-      // arrive after, and replace, the result being opened.
-      doLookup(true, openFirst);
-    } else {
-      openFirst();
-    }
+    openFirstResult();
   };
 
   $word.on("keydown", function (e) {
