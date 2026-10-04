@@ -341,8 +341,7 @@ $(function () {
     if (!word) {
       return;
     }
-    lookupRequest = $.getJSON("/find/?key=" + encodeURIComponent(word), function (data) {
-      lookupRequest = null;
+    var request = $.getJSON("/find/?key=" + encodeURIComponent(word), function (data) {
       if (!data || data.length == 0) {
         var $div = $("<div>").attr("align", "center").text("Nothing found");
         $lookupResult.append($div);
@@ -377,6 +376,16 @@ $(function () {
       highlightCurrentResult();
       if (onResults) {
         onResults();
+      }
+    });
+    lookupRequest = request;
+    // Cleared however the request ends - answered, failed or aborted - so a
+    // non-null lookupRequest always means one is in flight (whenResultsReady
+    // relies on that). Only if it's still this one: a newer lookup may have
+    // replaced it.
+    request.always(function () {
+      if (lookupRequest === request) {
+        lookupRequest = null;
       }
     });
   };
