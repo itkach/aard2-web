@@ -282,32 +282,45 @@ $(function () {
     }
   });
 
-  $styleSelect.on("change", function () {
-    var styleTitle = $styleSelect.val();
-    var dictUri = $styleSelect.attr("data-dict-uri");
-    if (dictUri) {
-      storageSet("style." + dictUri, styleTitle);
-    }
-    // Lookup result links for this dictionary still carry the previous style
-    // in their URLs; point them at the new one.
+  // Points the lookup results for dictionary dictUri at styleTitle and, if
+  // the article on screen is from it and not already in that style, reloads
+  // the article in it.
+  //
+  // The article on screen was served with whatever preference was active
+  // *at that time*, including in its own internal links (see Slobber's
+  // StylePreference), which only a fresh request can re-bake - patching the
+  // loaded DOM in place would mean duplicating that same logic here in JS, so
+  // just reload with the new preference and let the server redo it
+  // consistently. The reload replaces the current history entry: Back should
+  // go to the previous article, not to this one in the old style (which the
+  // load handler would only reload in the new style again).
+  var useStyle = function (dictUri, styleTitle) {
     $lookupResult.find("a[data-url]").each(function () {
       var $a = $(this);
       if ($a.attr("data-dict-uri") === dictUri) {
         $a.attr("href", applyStylePref($a.attr("data-url"), styleTitle));
       }
     });
-    // The article on screen was served with whatever preference was
-    // active *at that time*, including in its own internal links (see
-    // Slobber's StylePreference), which only a fresh request can
-    // re-bake - patching the loaded DOM in place would mean
-    // duplicating that same logic here in JS, so just reload with the
-    // new preference and let the server redo it consistently. The reload
-    // replaces the current history entry: Back should go to the previous
-    // article, not to this one in the old style (which the load handler would
-    // only reload in the new style again).
+    if ($styleSelect.attr("data-dict-uri") !== dictUri) {
+      return;
+    }
     var contentLocation = $content.contents().attr("location");
+    var rendered =
+      new URL(contentLocation.href).searchParams.get("style") || defaultStyle;
+    if (rendered === styleTitle) {
+      return;
+    }
     var currentHref = contentLocation.pathname + contentLocation.search + contentLocation.hash;
     contentLocation.replace(applyStylePref(currentHref, styleTitle));
+  };
+
+  $styleSelect.on("change", function () {
+    var styleTitle = $styleSelect.val();
+    var dictUri = $styleSelect.attr("data-dict-uri");
+    if (dictUri) {
+      storageSet("style." + dictUri, styleTitle);
+    }
+    useStyle(dictUri, styleTitle);
   });
 
   // The text the current results were looked up for.
@@ -653,19 +666,54 @@ $(function () {
     $themeToggle.find(".icon").attr("class", "icon icon-theme-" + theme);
   };
 
+  var applyTheme = function (theme) {
+    if (theme === "light" || theme === "dark") {
+      $root.attr("data-theme", theme);
+    } else {
+      $root.removeAttr("data-theme");
+    }
+    syncThemeToggle();
+  };
+
   $themeToggle.on("click", function () {
     var next = themes[(themes.indexOf(currentTheme()) + 1) % themes.length];
     if (next === "auto") {
-      $root.removeAttr("data-theme");
       storageRemove("theme");
     } else {
-      $root.attr("data-theme", next);
       storageSet("theme", next);
     }
-    syncThemeToggle();
+    applyTheme(next);
   });
 
   syncThemeToggle();
+
+  // Preferences saved by another tab (the "storage" event fires only in the
+  // tabs that didn't make the change): article styles and the theme follow
+  // it. The sidebar doesn't - it's each window's own layout; what's saved
+  // only decides how a new tab opens.
+  window.addEventListener("storage", function (e) {
+    if (e.key === null) {
+      // Storage cleared.
+      var shownDictUri = $styleSelect.attr("data-dict-uri");
+      memoryStorage = {};
+      applyTheme(null);
+      if (shownDictUri) {
+        useStyle(shownDictUri, getStylePref(shownDictUri));
+      }
+      return;
+    }
+    if (e.newValue === null) {
+      delete memoryStorage[e.key];
+    } else {
+      memoryStorage[e.key] = e.newValue;
+    }
+    if (e.key === "theme") {
+      applyTheme(e.newValue);
+    } else if (e.key.indexOf("style.") === 0) {
+      var dictUri = e.key.slice("style.".length);
+      useStyle(dictUri, getStylePref(dictUri));
+    }
+  });
 
   $("#dict-link").on("click", function () {
     console.log("getting dict info");
