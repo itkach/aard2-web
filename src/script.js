@@ -258,10 +258,13 @@ $(function () {
     // Slobber's StylePreference), which only a fresh request can
     // re-bake - patching the loaded DOM in place would mean
     // duplicating that same logic here in JS, so just reload with the
-    // new preference and let the server redo it consistently.
+    // new preference and let the server redo it consistently. The reload
+    // replaces the current history entry: Back should go to the previous
+    // article, not to this one in the old style (which the load handler would
+    // only reload in the new style again).
     var contentLocation = $content.contents().attr("location");
     var currentHref = contentLocation.pathname + contentLocation.search + contentLocation.hash;
-    $content.attr("src", applyStylePref(currentHref, styleTitle));
+    contentLocation.replace(applyStylePref(currentHref, styleTitle));
   });
 
   // The text the current results were looked up for.
