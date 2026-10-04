@@ -267,6 +267,11 @@ $(function () {
   // The text the current results were looked up for.
   var lookedUp = null;
 
+  // The /find request still in flight, if any. A new lookup aborts it, so a
+  // superseded response (which can arrive after the new lookup has started)
+  // never adds its results to the list.
+  var lookupRequest = null;
+
   var doLookup = function (dontClearContent, onResults) {
     var word = $word.val();
     console.log(word);
@@ -277,6 +282,10 @@ $(function () {
     $pendingResult = null;
     previewHref = null;
     $word.removeAttr("aria-activedescendant").attr("aria-expanded", "false");
+    if (lookupRequest) {
+      lookupRequest.abort();
+      lookupRequest = null;
+    }
     $lookupResult.empty();
     if (!dontClearContent) {
       $content.attr("src", "");
@@ -285,7 +294,8 @@ $(function () {
     if (!word) {
       return;
     }
-    $.getJSON("/find/?key=" + encodeURIComponent(word), function (data) {
+    lookupRequest = $.getJSON("/find/?key=" + encodeURIComponent(word), function (data) {
+      lookupRequest = null;
       if (!data || data.length == 0) {
         var $div = $("<div>").attr("align", "center").text("Nothing found");
         $lookupResult.append($div);
