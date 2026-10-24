@@ -39,6 +39,14 @@
   next time an article is loaded; a newly added file shows up in the
   picker after the page is reloaded.
 
+  Some example user styles to use or start from:
+
+  - [[https://github.com/itkach/aard2-android/blob/master/examples/dark.css][dark.css]] :: a dark version of any dictionary, for dictionaries
+    without a dark style of their own
+  - [[https://github.com/itkach/aard2-android/blob/master/examples/grayscale.css][grayscale.css]] :: any dictionary in shades of gray
+  - [[https://github.com/itkach/aard2-android/blob/master/examples/beige.css][beige.css]] :: dark brown text on a beige background, for Wikipedia,
+    Wiktionary and other MediaWiki-based dictionaries
+
 ** Keyboard
   The lookup field has keyboard focus when the page opens, and keeps
   it while you move through the lookup results:
