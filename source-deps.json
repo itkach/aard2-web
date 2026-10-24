@@ -2,13 +2,13 @@
   {
     "name": "slobj",
     "repo": "git@github.com:itkach/slobj.git",
-    "sha": "941e817e4edb031149a1fb375d60cfa8a5681b52",
-    "describe": "0.13"
+    "sha": "e3a12698b126bacb2ec500804d82be12dda34ab2",
+    "describe": "0.14"
   },
   {
     "name": "slobber",
     "repo": "git@github.com:itkach/slobber.git",
-    "sha": "8735093403736557a1c0447d5ec53a670f89242c",
-    "describe": "0.12"
+    "sha": "2f537cdbb7bbeeb1c7662c988337df9c7eb54242",
+    "describe": "0.13"
   }
 ]
